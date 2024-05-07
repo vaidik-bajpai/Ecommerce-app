@@ -205,15 +205,6 @@ func (m UserModel) Get(userID int64) (*User, error) {
 	return &user, nil
 }
 
-type Address struct {
-	ID      int
-	House   *string
-	Street  *string
-	City    *string
-	Pincode *string
-	UserID  int
-}
-
 type ProductUser struct {
 	ProductID   int
 	ProductName *string
@@ -223,13 +214,13 @@ type ProductUser struct {
 }
 
 type Order struct {
-	ID            int
-	OrderCart     []ProductUser
+	ID            int64
 	OrderedAt     time.Time
 	Price         uint64
 	Discount      *int
 	PaymentMethod Payment
-	UserID        int
+	UserID        int64
+	AddressID     int64
 }
 
 type Payment struct {

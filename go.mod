@@ -8,4 +8,4 @@ require (
 	golang.org/x/crypto v0.23.0
 )
 
-require github.com/pascaldekloe/jwt v1.10.0 // indirect
+require github.com/pascaldekloe/jwt v1.10.0

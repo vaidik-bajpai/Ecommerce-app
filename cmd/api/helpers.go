@@ -6,7 +6,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
+	"strconv"
 	"strings"
+
+	"github.com/vaidik-bajpai/ecommerce-api/internal/validator"
 )
 
 type envelope map[string]interface{}
@@ -76,4 +80,39 @@ func (app *application) readJSON(w http.ResponseWriter, r *http.Request, dst int
 	}
 
 	return nil
+}
+
+func (app *application) readIDParam(r *http.Request) (int64, error) {
+	paramID := r.PathValue("id")
+	id, err := strconv.ParseInt(paramID, 10, 64)
+	if err != nil || id < 1 {
+		return 0, errors.New("invalid id parameter")
+	}
+	return id, nil
+}
+
+func (app *application) readInt(qs url.Values, key string, defaultValue int, v *validator.Validator) int {
+	strValue := qs.Get(key)
+
+	if strValue == "" {
+		return defaultValue
+	}
+
+	intValue, err := strconv.Atoi(strValue)
+	if err != nil || intValue <= 0 {
+		v.AddErrors(key, "must be a positive integer value")
+		return defaultValue
+	}
+
+	return intValue
+}
+
+func (app *application) readString(qs url.Values, key string, defaultValue string, v *validator.Validator) string {
+	strValue := qs.Get(key)
+
+	if strValue == "" {
+		return defaultValue
+	}
+
+	return strValue
 }
