@@ -6,6 +6,7 @@ import (
 )
 
 var (
+	ErrRecordNotFound   = errors.New("record not found")
 	ErrDuplicateEmail   = errors.New("error duplicate email")
 	ErrDuplicatePhoneNo = errors.New("error duplicate phone no")
 )

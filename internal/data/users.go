@@ -41,22 +41,26 @@ func (p *password) Matches(plaintextPassword string) (bool, error) {
 	return true, nil
 }
 
+var AnonymousUser = &User{}
+
 type User struct {
-	ID           int       `json:"id"`
-	CreatedAt    time.Time `json:"created_at"`
-	FirstName    *string   `json:"firstname"`
-	LastName     *string   `json:"lastname"`
-	Password     password  `json:"-"`
-	Email        *string   `json:"email"`
-	Phone        *string   `json:"phone"`
-	Token        *string   `json:"-"`
-	RefreshToken *string   `json:"-"`
-	Version      int       `json:"version"`
+	ID        int64     `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	FirstName *string   `json:"firstname"`
+	LastName  *string   `json:"lastname"`
+	Password  password  `json:"-"`
+	Email     *string   `json:"email"`
+	Phone     *string   `json:"phone"`
+	Version   int       `json:"version"`
 	/* UpdatedAt      time.Time
 	UserID         string
 	UserCart       []ProductUser
 	AddressDetails []Address
 	OrderStatus    []Order */
+}
+
+func (u *User) IsAnonymous() bool {
+	return u == AnonymousUser
 }
 
 func ValidateEmail(v *validator.Validator, email string) {
@@ -114,13 +118,13 @@ type UserModel struct {
 func (m UserModel) Insert(user *User) error {
 	query := `
 		INSERT INTO users (firstname, lastname, email, password_hash, phone, token, refresh_token)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		VALUES ($1, $2, $3, $4, $5)
 		RETURNING id, created_at, version`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	args := []interface{}{user.FirstName, user.LastName, user.Email, user.Password.hash, user.Phone, user.Token, user.RefreshToken}
+	args := []interface{}{user.FirstName, user.LastName, user.Email, user.Password.hash, user.Phone}
 
 	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.CreatedAt, &user.Version)
 	if err != nil {
@@ -135,6 +139,70 @@ func (m UserModel) Insert(user *User) error {
 	}
 
 	return nil
+}
+
+func (m UserModel) GetByEmail(email string) (*User, error) {
+	query := `
+		SELECT id, created_at, firstname, lastname, email, password_hash, phone
+		FROM users
+		WHERE email = $1`
+
+	var user User
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := m.DB.QueryRowContext(ctx, query, email).Scan(
+		&user.ID,
+		&user.CreatedAt,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.Password.hash,
+		&user.Phone,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
+}
+
+func (m UserModel) Get(userID int64) (*User, error) {
+	query := `
+		SELECT id, created_at, firstname, lastname, email, hash_password, phone
+		FROM users
+		WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	var user User
+
+	err := m.DB.QueryRowContext(ctx, query, userID).Scan(
+		&user.ID,
+		&user.CreatedAt,
+		&user.FirstName,
+		&user.LastName,
+		&user.Email,
+		&user.Password.hash,
+		&user.Phone,
+	)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
 }
 
 type Address struct {

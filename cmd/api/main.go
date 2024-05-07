@@ -24,6 +24,9 @@ type config struct {
 	db   struct {
 		dsn string
 	}
+	jwt struct {
+		secret string
+	}
 }
 
 type application struct {
@@ -45,6 +48,7 @@ func main() {
 
 	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("ECOMMERCE_DB_DSN"), "dsn for the database")
 
+	flag.StringVar(&cfg.jwt.secret, "jwt", os.Getenv("JWT_SECRET"), "secret for json web token")
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)

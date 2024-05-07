@@ -6,7 +6,7 @@ func (app *application) routes() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("POST /v1/users/signup", app.createUserHandler)
-	mux.HandleFunc("POST v1/users/login", app.userLoginHandler)
+	mux.HandleFunc("POST /v1/users/login", app.userLoginHandler)
 	mux.HandleFunc("POST /v1/users/productview", app.viewProductHandler)
 	mux.HandleFunc("GET /v1/users/search", app.searchProductHandler)
 
