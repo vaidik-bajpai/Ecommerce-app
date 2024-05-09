@@ -8,4 +8,6 @@ require (
 	golang.org/x/crypto v0.23.0
 )
 
-require github.com/pascaldekloe/jwt v1.10.0
+require github.com/shopspring/decimal v1.4.0
+
+require github.com/steebchen/prisma-client-go v0.37.0

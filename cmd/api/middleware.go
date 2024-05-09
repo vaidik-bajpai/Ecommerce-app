@@ -1,17 +1,6 @@
 package main
 
-import (
-	"errors"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/pascaldekloe/jwt"
-	"github.com/vaidik-bajpai/ecommerce-api/internal/data"
-)
-
-func (app *application) authenticate(next http.Handler) http.HandlerFunc {
+/* func (app *application) authenticate(next http.Handler) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Vary", "Authorization")
 
@@ -74,3 +63,4 @@ func (app *application) authenticate(next http.Handler) http.HandlerFunc {
 		next.ServeHTTP(w, r)
 	})
 }
+*/

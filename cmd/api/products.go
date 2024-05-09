@@ -1,6 +1,6 @@
 package main
 
-import (
+/* import (
 	"errors"
 	"net/http"
 
@@ -132,3 +132,4 @@ func (app *application) searchProductHandler(w http.ResponseWriter, r *http.Requ
 		app.serverErrorResponse(w, r, err)
 	}
 }
+*/

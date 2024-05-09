@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -10,8 +8,8 @@ import (
 	"os"
 	"time"
 
-	// New import
-	// New import
+	"github.com/vaidik-bajpai/ecommerce-api/prisma/db"
+
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
@@ -59,7 +57,7 @@ func main() {
 		return
 	}
 
-	defer db.Close()
+	defer db.Prisma.Disconnect()
 
 	app := &application{
 		config: cfg,
@@ -77,19 +75,12 @@ func main() {
 	srv.ListenAndServe()
 }
 
-func (c config) openDB() (*sql.DB, error) {
-	db, err := sql.Open("postgres", c.db.dsn)
-	if err != nil {
+func (c config) openDB() (*db.PrismaClient, error) {
+	client := db.NewClient()
+	if err := client.Prisma.Connect(); err != nil {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	return client, nil
 
-	err = db.PingContext(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
 }

@@ -1,12 +1,9 @@
 package data
 
 import (
-	"context"
-	"database/sql"
-	"errors"
 	"time"
 
-	"github.com/vaidik-bajpai/ecommerce-api/internal/validator"
+	"github.com/vaidik-bajpai/ecommerce-api/prisma/db"
 )
 
 type Product struct {
@@ -19,10 +16,10 @@ type Product struct {
 }
 
 type ProductModel struct {
-	DB *sql.DB
+	DB *db.PrismaClient
 }
 
-func (m ProductModel) AddProduct(product *Product) error {
+/* func (m ProductModel) AddProduct(product *Product) error {
 	query := `
 		INSERT INTO products (name, price, rating, image)
 		VALUES ($1, $2, $3, $4)
@@ -162,3 +159,4 @@ func ValidateProduct(v *validator.Validator, product *Product) {
 
 	v.Check(validator.Matches(*product.Image, validator.LinkRX), "image", "must be a valid link")
 }
+*/

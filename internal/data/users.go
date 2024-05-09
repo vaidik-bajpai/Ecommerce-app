@@ -2,11 +2,14 @@ package data
 
 import (
 	"context"
-	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/vaidik-bajpai/ecommerce-api/internal/validator"
+
+	"github.com/vaidik-bajpai/ecommerce-api/prisma/db"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -112,36 +115,31 @@ func ValidateUser(v *validator.Validator, user *User) {
 }
 
 type UserModel struct {
-	DB *sql.DB
+	DB *db.PrismaClient
 }
 
 func (m UserModel) Insert(user *User) error {
-	query := `
-		INSERT INTO users (firstname, lastname, email, password_hash, phone, token, refresh_token)
-		VALUES ($1, $2, $3, $4, $5)
-		RETURNING id, created_at, version`
-
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	args := []interface{}{user.FirstName, user.LastName, user.Email, user.Password.hash, user.Phone}
+	newUser, err := m.DB.User.CreateOne(
+		db.User.FirstName.Set(*user.FirstName),
+		db.User.LastName.Set(*user.LastName),
+		db.User.Email.Set(*user.Email),
+		db.User.Phone.Set(*user.Phone),
+		db.User.Password.Set(string(user.Password.hash)),
+	).Exec(ctx)
 
-	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.CreatedAt, &user.Version)
 	if err != nil {
-		switch {
-		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
-			return ErrDuplicateEmail
-		case err.Error() == `pq: duplicate key value violates unique constraint "users_phone_key"`:
-			return ErrDuplicatePhoneNo
-		default:
-			return err
-		}
+		return err
 	}
+
+	fmt.Println(newUser)
 
 	return nil
 }
 
-func (m UserModel) GetByEmail(email string) (*User, error) {
+/* func (m UserModel) GetByEmail(email string) (*User, error) {
 	query := `
 		SELECT id, created_at, firstname, lastname, email, password_hash, phone
 		FROM users
@@ -227,3 +225,4 @@ type Payment struct {
 	Digital bool
 	COD     bool
 }
+*/

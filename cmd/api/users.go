@@ -3,13 +3,9 @@ package main
 import (
 	"errors"
 	"net/http"
-	"strconv"
-	"time"
 
-	"github.com/pascaldekloe/jwt"
 	"github.com/vaidik-bajpai/ecommerce-api/internal/data"
 	"github.com/vaidik-bajpai/ecommerce-api/internal/validator"
-	"golang.org/x/crypto/bcrypt"
 )
 
 func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +63,7 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (app *application) userLoginHandler(w http.ResponseWriter, r *http.Request) {
+/* func (app *application) userLoginHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -139,3 +135,4 @@ func (app *application) userLoginHandler(w http.ResponseWriter, r *http.Request)
 func (app *application) viewProductHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("viewProduct endpoint"))
 }
+*/

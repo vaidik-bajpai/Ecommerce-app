@@ -1,8 +1,9 @@
 package data
 
 import (
-	"database/sql"
 	"errors"
+
+	"github.com/vaidik-bajpai/ecommerce-api/prisma/db"
 )
 
 var (
@@ -16,7 +17,7 @@ type Models struct {
 	Products ProductModel
 }
 
-func NewModels(db *sql.DB) Models {
+func NewModels(db *db.PrismaClient) Models {
 	return Models{
 		Users:    UserModel{DB: db},
 		Products: ProductModel{DB: db},
