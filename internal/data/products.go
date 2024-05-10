@@ -3,7 +3,7 @@ package data
 import (
 	"time"
 
-	"github.com/vaidik-bajpai/ecommerce-api/prisma/db"
+	"github.com/vaidik-bajpai/ecommerce-api/internal/prisma/db"
 )
 
 type Product struct {

@@ -3,7 +3,7 @@ package data
 import (
 	"errors"
 
-	"github.com/vaidik-bajpai/ecommerce-api/prisma/db"
+	"github.com/vaidik-bajpai/ecommerce-api/internal/prisma/db"
 )
 
 var (

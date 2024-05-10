@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/vaidik-bajpai/ecommerce-api/prisma/db"
+	"github.com/vaidik-bajpai/ecommerce-api/internal/prisma/db"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"

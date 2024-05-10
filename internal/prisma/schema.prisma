@@ -15,16 +15,50 @@ model User {
     email String @unique
     phone String @unique
     password String
+    addresses Address[]
+    orders Orders[]
     version Int @default(1)
 }
 
 model Product {
   id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
+  createdAt DateTime? @default(now())
   name      String
   price     Int
   rating    Int
   image     String?
+}   
+
+model Address {
+    id Int @id @default(autoincrement())
+    house String
+    street String
+    city String
+    pincode String
+    userId Int
+    user User @relation(fields: [userId], references: [id])
+    orders Orders[]
 }
+
+model Orders {
+    id Int @id @default(autoincrement())
+    orderedAt DateTime? @default(now())
+    price Int 
+    discound Int
+    paymentMethod Int
+    payment Payment @relation(fields: [paymentMethod], references: [id])
+    userId Int
+    user User @relation(fields: [userId], references: [id])
+    addressId Int
+    address Address? @relation(fields: [addressId], references: [id])
+}
+
+model Payment {
+    id Int @id @default(autoincrement())
+    type String
+    orders Orders[]
+}
+
+
 
 

@@ -8,7 +8,7 @@ import (
 
 	"github.com/vaidik-bajpai/ecommerce-api/internal/validator"
 
-	"github.com/vaidik-bajpai/ecommerce-api/prisma/db"
+	"github.com/vaidik-bajpai/ecommerce-api/internal/prisma/db"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -55,11 +55,7 @@ type User struct {
 	Email     *string   `json:"email"`
 	Phone     *string   `json:"phone"`
 	Version   int       `json:"version"`
-	/* UpdatedAt      time.Time
-	UserID         string
-	UserCart       []ProductUser
-	AddressDetails []Address
-	OrderStatus    []Order */
+	Addresses []Address `json:"addresses,omitempty"`
 }
 
 func (u *User) IsAnonymous() bool {
@@ -130,6 +126,14 @@ func (m UserModel) Insert(user *User) error {
 		db.User.Password.Set(string(user.Password.hash)),
 	).Exec(ctx)
 
+	user.ID = int64(newUser.ID)
+	user.Version = newUser.Version
+	createdAt, ok := newUser.CreatedAt()
+	if !ok {
+		return err
+	}
+	user.CreatedAt = createdAt
+
 	if err != nil {
 		return err
 	}
@@ -139,70 +143,67 @@ func (m UserModel) Insert(user *User) error {
 	return nil
 }
 
-/* func (m UserModel) GetByEmail(email string) (*User, error) {
-	query := `
-		SELECT id, created_at, firstname, lastname, email, password_hash, phone
-		FROM users
-		WHERE email = $1`
-
+func (m UserModel) GetByEmail(email string) (*User, error) {
 	var user User
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err := m.DB.QueryRowContext(ctx, query, email).Scan(
-		&user.ID,
-		&user.CreatedAt,
-		&user.FirstName,
-		&user.LastName,
-		&user.Email,
-		&user.Password.hash,
-		&user.Phone,
-	)
+	newUser, err := m.DB.User.FindUnique(
+		db.User.Email.Equals(email),
+	).With(
+		db.User.Addresses.Fetch(),
+	).Exec(ctx)
+
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return nil, ErrRecordNotFound
-		default:
-			return nil, err
-		}
+		return nil, err
 	}
+
+	fmt.Println(newUser)
 
 	return &user, nil
 }
 
 func (m UserModel) Get(userID int64) (*User, error) {
-	query := `
-		SELECT id, created_at, firstname, lastname, email, hash_password, phone
-		FROM users
-		WHERE id = $1`
-
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	var user User
+	newUser, err := m.DB.User.FindUnique(
+		db.User.ID.Equals(int(userID)),
+	).With(
+		db.User.Addresses.Fetch(),
+	).Exec(ctx)
 
-	err := m.DB.QueryRowContext(ctx, query, userID).Scan(
-		&user.ID,
-		&user.CreatedAt,
-		&user.FirstName,
-		&user.LastName,
-		&user.Email,
-		&user.Password.hash,
-		&user.Phone,
-	)
-	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return nil, ErrRecordNotFound
-		default:
-			return nil, err
-		}
+	var user = &User{
+		ID:        int64(newUser.ID),
+		FirstName: &newUser.FirstName,
+		LastName:  &newUser.LastName,
+		Email:     &newUser.Email,
+		Phone:     &newUser.Phone,
+		Version:   newUser.Version,
 	}
 
-	return &user, nil
+	for _, dbAddress := range newUser.Addresses() {
+		address := Address{
+			ID:      dbAddress.ID,
+			House:   &dbAddress.House,
+			Street:  &dbAddress.Street,
+			City:    &dbAddress.City,
+			Pincode: &dbAddress.Pincode,
+			UserID:  dbAddress.UserID,
+		}
+		user.Addresses = append(user.Addresses, address)
+	}
+	user.Password.Set(newUser.Password)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
+/*
 type ProductUser struct {
 	ProductID   int
 	ProductName *string

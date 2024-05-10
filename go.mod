@@ -10,4 +10,7 @@ require (
 
 require github.com/shopspring/decimal v1.4.0
 
-require github.com/steebchen/prisma-client-go v0.37.0
+require (
+	github.com/pascaldekloe/jwt v1.12.0
+	github.com/steebchen/prisma-client-go v0.37.0
+)
