@@ -1,6 +1,6 @@
 package main
 
-/* import (
+import (
 	"errors"
 	"net/http"
 
@@ -81,13 +81,7 @@ func (app *application) searchProductByIDHandler(w http.ResponseWriter, r *http.
 
 	product, err := app.models.Products.Get(id)
 	if err != nil {
-		switch {
-		case errors.Is(err, data.ErrRecordNotFound):
-			app.notFoundErrorResponse(w, r)
-		default:
-			app.serverErrorResponse(w, r, err)
-		}
-		return
+		app.serverErrorResponse(w, r, err)
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"product": product}, nil)
@@ -114,7 +108,7 @@ func (app *application) searchProductHandler(w http.ResponseWriter, r *http.Requ
 	input.PageSize = app.readInt(qs, "page_size", 20, v)
 
 	input.Sort = app.readString(qs, "sort", "id", v)
-	input.Filters.SortSafeList = []string{"id", "title", "year", "runtime", "-id", "-title", "-year", "-runtime"}
+	input.Filters.SortSafeList = []string{"id", "name", "price", "-id", "rating", "-name", "-price", "-rating"}
 
 	if data.ValidateFilters(v, input.Filters); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
@@ -132,4 +126,3 @@ func (app *application) searchProductHandler(w http.ResponseWriter, r *http.Requ
 		app.serverErrorResponse(w, r, err)
 	}
 }
-*/

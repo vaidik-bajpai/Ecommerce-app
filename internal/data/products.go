@@ -1,9 +1,13 @@
 package data
 
 import (
+	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	"github.com/vaidik-bajpai/ecommerce-api/internal/prisma/db"
+	"github.com/vaidik-bajpai/ecommerce-api/internal/validator"
 )
 
 type Product struct {
@@ -19,132 +23,145 @@ type ProductModel struct {
 	DB *db.PrismaClient
 }
 
-/* func (m ProductModel) AddProduct(product *Product) error {
-	query := `
-		INSERT INTO products (name, price, rating, image)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, created_at`
-
+func (m ProductModel) AddProduct(product *Product) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	args := []interface{}{product.Name, product.Price, product.Rating, product.Image}
-
-	err := m.DB.QueryRowContext(ctx, query, args...).Scan(
-		&product.ID,
-		&product.CreatedAt,
-	)
-
+	newProduct, err := m.DB.Product.CreateOne(
+		db.Product.Name.Set(product.Name),
+		db.Product.Price.Set(int(product.Price)),
+		db.Product.Rating.Set(int(product.Rating)),
+		db.Product.Image.Set(*product.Image),
+	).Exec(ctx)
 	if err != nil {
 		return err
 	}
+
+	createdAt, ok := newProduct.CreatedAt()
+	if !ok {
+		return errors.New("error accessing created_at of product")
+	}
+
+	product.ID = int64(newProduct.ID)
+	product.CreatedAt = createdAt
 
 	return nil
 }
 
 func (m ProductModel) RemoveProduct(productID int64) error {
-	query := `
-		DELETE FROM products WHERE id = $1`
-
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	result, err := m.DB.ExecContext(ctx, query, productID)
+	_, err := m.DB.Product.FindUnique(
+		db.Product.ID.Equals(int(productID)),
+	).Delete().Exec(ctx)
 
 	if err != nil {
 		return err
-	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
-
-	if rowsAffected == 0 {
-		return ErrRecordNotFound
 	}
 	return nil
 }
 
 func (m ProductModel) Get(productID int64) (*Product, error) {
-	query := `
-		SELECT id, created_at, name, price, rating, image
-		FROM products
-		WHERE id = $1`
-
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	var product Product
+	newProduct, err := m.DB.Product.FindUnique(
+		db.Product.ID.Equals(int(productID)),
+	).Exec(ctx)
 
-	err := m.DB.QueryRowContext(ctx, query, productID).Scan(
-		&product.ID,
-		&product.CreatedAt,
-		&product.Name,
-		&product.Price,
-		&product.Rating,
-		&product.Image,
-	)
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return nil, ErrRecordNotFound
-		default:
-			return nil, err
-		}
+		return nil, err
+	}
+
+	createdAt, ok := newProduct.CreatedAt()
+	if !ok {
+		return nil, errors.New("error accessing created at")
+	}
+
+	image, ok := newProduct.Image()
+	if !ok {
+		return nil, errors.New("error accessing image")
+	}
+
+	product := Product{
+		ID:        int64(newProduct.ID),
+		Name:      newProduct.Name,
+		Price:     uint64(newProduct.Price),
+		Rating:    uint8(newProduct.Rating),
+		CreatedAt: createdAt,
+		Image:     &image,
 	}
 
 	return &product, nil
 }
 
 func (m ProductModel) GetAll(productName string, price int, filters Filters) ([]*Product, Metadata, error) {
-	query := `
-		SELECT count(*) OVER(), id, created_at, name, price, rating, image
-		FROM products
-		WHERE (LOWER(name) = LOWER($1) OR $1 = '')
-		AND (price <= $2)
-		ORDER BY id`
-
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	rows, err := m.DB.QueryContext(ctx, query, productName, price)
+	var total db.RawInt
+	err := m.DB.Prisma.QueryRaw(`SELECT count(*) as total FROM "Product"`).Exec(ctx, total)
 	if err != nil {
 		return nil, Metadata{}, err
 	}
 
-	defer rows.Close()
+	var records []db.ProductModel
 
-	totalRecords := 0
-	products := []*Product{}
-
-	for rows.Next() {
-		var product Product
-
-		err := rows.Scan(
-			&totalRecords,
-			&product.ID,
-			&product.CreatedAt,
-			&product.Name,
-			&product.Price,
-			&product.Rating,
-			&product.Image,
-		)
-
-		if err != nil {
-			return nil, Metadata{}, err
-		}
-
-		products = append(products, &product)
+	switch filters.sortColumn() {
+	case "id":
+		records, err = m.DB.Product.FindMany().Take(filters.limit()).Skip(filters.offset()).OrderBy(
+			db.Product.Price.Lte(price),
+			db.Product.ID.Order(filters.sortDirection()),
+		).Exec(ctx)
+	case "price":
+		records, err = m.DB.Product.FindMany().Take(filters.limit()).Skip(filters.offset()).OrderBy(
+			db.Product.Price.Order(filters.sortDirection()),
+		).Exec(ctx)
+	case "rating":
+		records, err = m.DB.Product.FindMany().Take(filters.limit()).Skip(filters.offset()).OrderBy(
+			db.Product.Price.Lte(price),
+			db.Product.Rating.Order(filters.sortDirection()),
+		).Exec(ctx)
+	case "name":
+		records, err = m.DB.Product.FindMany().Take(filters.limit()).Skip(filters.offset()).OrderBy(
+			db.Product.Price.Lte(price),
+			db.Product.Name.Order(filters.sortDirection()),
+		).Exec(ctx)
 	}
 
-	if err := rows.Err(); err != nil {
+	if err != nil {
 		return nil, Metadata{}, err
 	}
 
-	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+	var products []*Product
 
-	return products, metadata, nil
+	for _, product := range records {
+		createdAt, ok := product.CreatedAt()
+		if !ok {
+			return nil, Metadata{}, errors.New("error accessing created at")
+		}
+
+		image, ok := product.Image()
+		if !ok {
+			return nil, Metadata{}, errors.New("error accessing image")
+		}
+		record := Product{
+			ID:        int64(product.ID),
+			CreatedAt: createdAt,
+			Name:      productName,
+			Price:     uint64(product.Price),
+			Rating:    uint8(product.Rating),
+			Image:     &image,
+		}
+
+		products = append(products, &record)
+	}
+
+	metadata := calculateMetadata(int(total), filters.Page, filters.PageSize)
+	fmt.Println(metadata)
+	fmt.Println(int(total))
+	return products, metadata, err
 }
 
 func ValidateProduct(v *validator.Validator, product *Product) {
@@ -159,4 +176,3 @@ func ValidateProduct(v *validator.Validator, product *Product) {
 
 	v.Check(validator.Matches(*product.Image, validator.LinkRX), "image", "must be a valid link")
 }
-*/

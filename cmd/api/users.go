@@ -112,6 +112,12 @@ func (app *application) userLoginHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	err = user.Password.Set(input.Password)
+	if err != nil {
+		app.invalidCredentialResponse(w, r)
+		return
+	}
+
 	if !match {
 		app.invalidCredentialResponse(w, r)
 		return

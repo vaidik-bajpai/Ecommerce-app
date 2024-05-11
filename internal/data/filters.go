@@ -4,6 +4,7 @@ import (
 	"math"
 	"strings"
 
+	"github.com/vaidik-bajpai/ecommerce-api/internal/prisma/db"
 	"github.com/vaidik-bajpai/ecommerce-api/internal/validator"
 )
 
@@ -24,11 +25,11 @@ func (f Filters) sortColumn() string {
 	panic("unsafe sort parameter: " + f.Sort)
 }
 
-func (f Filters) sortDirection() string {
+func (f Filters) sortDirection() db.SortOrder {
 	if strings.HasPrefix(f.Sort, "-") {
-		return "DESC"
+		return db.SortOrderDesc
 	}
-	return "ASC"
+	return db.SortOrderAsc
 }
 
 func (f Filters) limit() int {

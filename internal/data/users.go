@@ -123,7 +123,7 @@ func (m UserModel) Insert(user *User) error {
 		db.User.LastName.Set(*user.LastName),
 		db.User.Email.Set(*user.Email),
 		db.User.Phone.Set(*user.Phone),
-		db.User.Password.Set(string(user.Password.hash)),
+		db.User.Password.Set(user.Password.hash),
 	).Exec(ctx)
 
 	user.ID = int64(newUser.ID)
@@ -151,15 +151,27 @@ func (m UserModel) GetByEmail(email string) (*User, error) {
 
 	newUser, err := m.DB.User.FindUnique(
 		db.User.Email.Equals(email),
-	).With(
-		db.User.Addresses.Fetch(),
 	).Exec(ctx)
 
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println(newUser)
+	createdAt, ok := newUser.CreatedAt()
+	if !ok {
+		return nil, errors.New("something went wrong with our server")
+	}
+
+	user = User{
+		ID:        int64(newUser.ID),
+		FirstName: &newUser.FirstName,
+		LastName:  &newUser.LastName,
+		Email:     &newUser.Email,
+		Phone:     &newUser.Phone,
+		Version:   newUser.Version,
+		CreatedAt: createdAt,
+	}
+	user.Password.hash = newUser.Password
 
 	return &user, nil
 }
@@ -174,6 +186,10 @@ func (m UserModel) Get(userID int64) (*User, error) {
 		db.User.Addresses.Fetch(),
 	).Exec(ctx)
 
+	if err != nil {
+		return nil, err
+	}
+
 	var user = &User{
 		ID:        int64(newUser.ID),
 		FirstName: &newUser.FirstName,
@@ -183,7 +199,7 @@ func (m UserModel) Get(userID int64) (*User, error) {
 		Version:   newUser.Version,
 	}
 
-	for _, dbAddress := range newUser.Addresses() {
+	/* for _, dbAddress := range newUser.Addresses() {
 		address := Address{
 			ID:      dbAddress.ID,
 			House:   &dbAddress.House,
@@ -193,12 +209,9 @@ func (m UserModel) Get(userID int64) (*User, error) {
 			UserID:  dbAddress.UserID,
 		}
 		user.Addresses = append(user.Addresses, address)
-	}
-	user.Password.Set(newUser.Password)
+	} */
 
-	if err != nil {
-		return nil, err
-	}
+	user.Password.hash = newUser.Password
 
 	return user, nil
 }

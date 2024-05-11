@@ -7,13 +7,13 @@ func (app *application) routes() *http.ServeMux {
 
 	mux.HandleFunc("POST /v1/users/signup", app.createUserHandler)
 
-	/* mux.HandleFunc("POST /v1/users/login", app.userLoginHandler)
-	mux.HandleFunc("POST /v1/users/productview", app.viewProductHandler) */
+	mux.HandleFunc("POST /v1/users/login", app.userLoginHandler)
+	mux.HandleFunc("POST /v1/users/productview", app.authenticate(app.viewProductHandler))
 
-	/* mux.HandleFunc("GET /v1/products/search", app.searchProductHandler)
-	mux.HandleFunc("GET /v1/products/search/{id}", app.searchProductByIDHandler)
+	mux.HandleFunc("GET /v1/products/search", app.searchProductHandler)
+	mux.HandleFunc("GET /v1/products/{id}", app.searchProductByIDHandler)
 
-	mux.HandleFunc("POST /v1/admin/products", app.createProductHandler) */
+	mux.HandleFunc("POST /v1/admin/products", app.createProductHandler)
 	mux.HandleFunc("DELETE /v1/admin/products/{id}", app.removeItemHandler)
 
 	mux.HandleFunc("GET /v1/addtocart", app.addToCartHandler)

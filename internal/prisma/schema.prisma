@@ -1,64 +1,71 @@
 datasource db {
-    provider = "postgres"
-    url = env("ECOMMERCE_DB_DSN")
+  provider = "postgres"
+  url      = env("ECOMMERCE_DB_DSN")
 }
 
 generator db {
-    provider = "go run github.com/steebchen/prisma-client-go"
+  provider = "go run github.com/steebchen/prisma-client-go"
 }
 
 model User {
-    id Int @id @default(autoincrement())
-    createdAt DateTime? @default(now())
-    firstName String
-    lastName String
-    email String @unique
-    phone String @unique
-    password String
-    addresses Address[]
-    orders Orders[]
-    version Int @default(1)
+  id        Int       @id @unique @default(autoincrement())
+  createdAt DateTime? @default(now())
+  firstName String
+  lastName  String
+  email     String    @unique
+  phone     String    @unique
+  password  Bytes
+  addresses Address[]
+  orders    Orders[]
+  version   Int       @default(1)
+  Cart      Cart?
 }
 
 model Product {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
   createdAt DateTime? @default(now())
   name      String
   price     Int
   rating    Int
   image     String?
-}   
+  cart      Cart[]
+}
 
 model Address {
-    id Int @id @default(autoincrement())
-    house String
-    street String
-    city String
-    pincode String
-    userId Int
-    user User @relation(fields: [userId], references: [id])
-    orders Orders[]
+  id      Int      @id @default(autoincrement())
+  house   String
+  street  String
+  city    String
+  pincode String
+  userId  Int
+  user    User     @relation(fields: [userId], references: [id])
+  orders  Orders[]
 }
 
 model Orders {
-    id Int @id @default(autoincrement())
-    orderedAt DateTime? @default(now())
-    price Int 
-    discound Int
-    paymentMethod Int
-    payment Payment @relation(fields: [paymentMethod], references: [id])
-    userId Int
-    user User @relation(fields: [userId], references: [id])
-    addressId Int
-    address Address? @relation(fields: [addressId], references: [id])
+  id            Int       @id @default(autoincrement())
+  orderedAt     DateTime? @default(now())
+  price         Int
+  discound      Int
+  paymentMethod Int
+  payment       Payment   @relation(fields: [paymentMethod], references: [id])
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id])
+  addressId     Int
+  address       Address?  @relation(fields: [addressId], references: [id])
 }
 
 model Payment {
-    id Int @id @default(autoincrement())
-    type String
-    orders Orders[]
+  id     Int      @id @default(autoincrement())
+  type   String
+  orders Orders[]
 }
 
+model Cart {
+  userId    Int     @unique
+  user      User    @relation(fields: [userId], references: [id])
+  productId Int
+  product   Product? @relation(fields: [productId], references: [id])
 
-
-
+  @@id([userId, productId])
+}
