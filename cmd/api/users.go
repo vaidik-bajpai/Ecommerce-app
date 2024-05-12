@@ -13,7 +13,6 @@ import (
 )
 
 func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request) {
-	app.models.Users.Get(6)
 	var input struct {
 		FirstName string `json:"firstname"`
 		LastName  string `json:"lastname"`

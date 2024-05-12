@@ -20,7 +20,7 @@ type AddressModel struct {
 	DB *db.PrismaClient
 }
 
-func (m AddressModel) AddAddress(address *Address) error {
+func (m AddressModel) AddAddress(userId int, address *Address) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -30,7 +30,7 @@ func (m AddressModel) AddAddress(address *Address) error {
 		db.Address.City.Set(*address.City),
 		db.Address.Pincode.Set(*address.Pincode),
 		db.Address.User.Link(
-			db.User.ID.Equals(6),
+			db.User.ID.Equals(userId),
 		),
 	).Exec(ctx)
 
@@ -39,6 +39,21 @@ func (m AddressModel) AddAddress(address *Address) error {
 	}
 
 	address.ID = newAddress.ID
+
+	return nil
+}
+
+func (m AddressModel) RemoveAddress(addressID int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := m.DB.Product.FindUnique(
+		db.Product.ID.Equals(addressID),
+	).Delete().Exec(ctx)
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

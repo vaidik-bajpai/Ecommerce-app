@@ -15,6 +15,7 @@ var (
 type Models struct {
 	Users    UserModel
 	Products ProductModel
+	Carts    CartModel
 }
 
 func NewModels(db *db.PrismaClient) Models {

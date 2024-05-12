@@ -3,7 +3,6 @@ package data
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/vaidik-bajpai/ecommerce-api/internal/prisma/db"
@@ -71,7 +70,12 @@ func (m ProductModel) Get(productID int64) (*Product, error) {
 	).Exec(ctx)
 
 	if err != nil {
-		return nil, err
+		switch {
+		case errors.Is(err, db.ErrNotFound):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
 	}
 
 	createdAt, ok := newProduct.CreatedAt()
@@ -131,7 +135,12 @@ func (m ProductModel) GetAll(productName string, price int, filters Filters) ([]
 	}
 
 	if err != nil {
-		return nil, Metadata{}, err
+		switch {
+		case errors.Is(err, db.ErrNotFound):
+			return nil, Metadata{}, ErrRecordNotFound
+		default:
+			return nil, Metadata{}, err
+		}
 	}
 
 	var products []*Product
@@ -159,8 +168,6 @@ func (m ProductModel) GetAll(productName string, price int, filters Filters) ([]
 	}
 
 	metadata := calculateMetadata(int(total), filters.Page, filters.PageSize)
-	fmt.Println(metadata)
-	fmt.Println(int(total))
 	return products, metadata, err
 }
 

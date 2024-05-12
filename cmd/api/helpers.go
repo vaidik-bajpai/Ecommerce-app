@@ -107,6 +107,22 @@ func (app *application) readInt(qs url.Values, key string, defaultValue int, v *
 	return intValue
 }
 
+func (app *application) readQueryInt(qs url.Values, key string, v *validator.Validator) int {
+	keyStr := qs.Get(key)
+	if keyStr == "" {
+		v.AddErrors(key, "must be provided")
+		return -1
+	}
+
+	keyInt, err := strconv.Atoi(keyStr)
+	if err != nil || keyInt <= 0 {
+		v.AddErrors(key, "must be a positive integer value")
+		return -1
+	}
+
+	return keyInt
+}
+
 func (app *application) readString(qs url.Values, key string, defaultValue string, v *validator.Validator) string {
 	strValue := qs.Get(key)
 

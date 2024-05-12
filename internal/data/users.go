@@ -3,7 +3,6 @@ package data
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/vaidik-bajpai/ecommerce-api/internal/validator"
@@ -126,6 +125,25 @@ func (m UserModel) Insert(user *User) error {
 		db.User.Password.Set(user.Password.hash),
 	).Exec(ctx)
 
+	if err != nil {
+		infoUnique, isErr := db.IsErrUniqueConstraint(err)
+
+		switch {
+		case isErr:
+			for _, field := range infoUnique.Fields {
+				if field == "email" {
+					return ErrDuplicateEmail
+				} else if field == "phone" {
+					return ErrDuplicatePhoneNo
+				} else {
+					return errors.New("unique constraint violated")
+				}
+			}
+		default:
+			return err
+		}
+	}
+
 	user.ID = int64(newUser.ID)
 	user.Version = newUser.Version
 	createdAt, ok := newUser.CreatedAt()
@@ -133,12 +151,6 @@ func (m UserModel) Insert(user *User) error {
 		return err
 	}
 	user.CreatedAt = createdAt
-
-	if err != nil {
-		return err
-	}
-
-	fmt.Println(newUser)
 
 	return nil
 }
