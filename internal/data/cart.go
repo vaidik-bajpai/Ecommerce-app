@@ -25,7 +25,9 @@ func (m CartModel) AddToCart(product *Product, userId, productId int) error {
 	_, err := m.DB.Cart.UpsertOne(
 		db.Cart.UserID.Equals(userId),
 	).Create(
-		db.Cart.UserID.Set(userId),
+		db.Cart.User.Link(
+			db.User.ID.Equals(userId),
+		),
 	).Update(
 		db.Cart.UserID.Set(userId),
 	).Exec(ctx)
@@ -33,14 +35,6 @@ func (m CartModel) AddToCart(product *Product, userId, productId int) error {
 	if err != nil {
 		return err
 	}
-
-	_, err = m.DB.Cart.FindUnique(
-		db.Cart.UserID.Equals(userId),
-	).Update(
-		db.Cart.User.Link(
-			db.User.ID.Equals(userId),
-		),
-	).Exec(ctx)
 
 	/* if err != nil {
 		switch {
