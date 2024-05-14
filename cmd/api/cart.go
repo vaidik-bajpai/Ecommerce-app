@@ -24,18 +24,33 @@ func (app *application) addToCartHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	cart := data.Cart{
-		UserID:    int(userId),
-		ProductID: int(productId),
+	/* var input struct {
+		Name   string
+		Price  int
+		Rating int
+		Image  string
 	}
 
-	err := app.models.Carts.AddToCart(&cart)
+	err := app.readJSON(w, r, &input)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	product := data.Product{
+		Name:   input.Name,
+		Price:  uint64(input.Price),
+		Rating: uint8(input.Rating),
+		Image:  &input.Image,
+	} */
+
+	err := app.models.Carts.AddToCart(&data.Product{}, userId, productId)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"message": "The product is added to cart", "cart": cart}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "The product is added to cart"}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}

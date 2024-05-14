@@ -2,6 +2,7 @@ package data
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/vaidik-bajpai/ecommerce-api/internal/prisma/db"
@@ -17,31 +18,75 @@ type CartModel struct {
 	DB *db.PrismaClient
 }
 
-func (m CartModel) AddToCart(product *Product) error {
+func (m CartModel) AddToCart(product *Product, userId, productId int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	userCart, err := m.DB.Cart.CreateOne(
-		db.Cart.User.Link(
-			db.User.ID.Equals(cart.UserID),
-		),
-		db.Cart.UserID.Set(cart.UserID),
+	_, err := m.DB.Cart.UpsertOne(
+		db.Cart.UserID.Equals(userId),
+	).Create(
+		db.Cart.UserID.Set(userId),
+	).Update(
+		db.Cart.UserID.Set(userId),
 	).Exec(ctx)
 
 	if err != nil {
 		return err
 	}
 
-	cart, err := m.DB.Cart.FindUnique(
-		prisma.Cart.ID.Equals(cartID),
+	_, err = m.DB.Cart.FindUnique(
+		db.Cart.UserID.Equals(userId),
 	).Update(
-		prisma.Cart.Products.Connect(
-			&prisma.ProductWhereUniqueInput{
-				ID: &productID,
-			},
+		db.Cart.User.Link(
+			db.User.ID.Equals(userId),
 		),
 	).Exec(ctx)
 
-	return nil
+	/* if err != nil {
+		switch {
+		case errors.Is(err, db.ErrNotFound):
+			createErr := m.CreateCart(userId)
+			if createErr != nil {
+				return createErr
+			}
+		default:
+			return err
+		}
+	} */
 
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m CartModel) CreateCart(userId int) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := m.DB.Cart.CreateOne(
+		db.Cart.User.Link(
+			db.User.ID.Equals(userId),
+		),
+	).Exec(ctx)
+
+	if err != nil {
+		infoUnique, isErr := db.IsErrUniqueConstraint(err)
+
+		switch {
+		case isErr:
+			for _, field := range infoUnique.Fields {
+				if field == "userid" {
+					return ErrMultipleCarts
+				} else {
+					return errors.New("unique constraint violated")
+				}
+			}
+		default:
+			return err
+		}
+	}
+
+	return nil
 }

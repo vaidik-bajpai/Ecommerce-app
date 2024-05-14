@@ -17,13 +17,13 @@ model User {
   password  Bytes
   addresses Address[]
   orders    Orders[]
-  cart      Cart[]
+  cart      Cart?
   version   Int       @default(1)
 }
 
 model Cart {
   id         Int       @id @default(autoincrement())
-  userId     Int
+  userId     Int       @unique
   user       User      @relation(fields: [userId], references: [id])
   products   Product[] @relation("CartProducts")
 }
