@@ -18,7 +18,7 @@ type CartModel struct {
 	DB *db.PrismaClient
 }
 
-func (m CartModel) AddToCart(product *Product, userId, productId int) error {
+func (m CartModel) AddToCart(userId, productId int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -28,8 +28,14 @@ func (m CartModel) AddToCart(product *Product, userId, productId int) error {
 		db.Cart.User.Link(
 			db.User.ID.Equals(userId),
 		),
+		db.Cart.Products.Link(
+			db.Product.ID.Equals(productId),
+		),
 	).Update(
 		db.Cart.UserID.Set(userId),
+		db.Cart.Products.Link(
+			db.Product.ID.Equals(productId),
+		),
 	).Exec(ctx)
 
 	if err != nil {

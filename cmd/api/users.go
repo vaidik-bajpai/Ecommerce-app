@@ -21,7 +21,7 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 		Phone     string `json:"phone"`
 	}
 
-	err := app.readJSON(w, r, &input)
+	err = app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return

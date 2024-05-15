@@ -3,7 +3,6 @@ package main
 import (
 	"net/http"
 
-	"github.com/vaidik-bajpai/ecommerce-api/internal/data"
 	"github.com/vaidik-bajpai/ecommerce-api/internal/validator"
 )
 
@@ -24,27 +23,7 @@ func (app *application) addToCartHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	/* var input struct {
-		Name   string
-		Price  int
-		Rating int
-		Image  string
-	}
-
-	err := app.readJSON(w, r, &input)
-	if err != nil {
-		app.badRequestResponse(w, r, err)
-		return
-	}
-
-	product := data.Product{
-		Name:   input.Name,
-		Price:  uint64(input.Price),
-		Rating: uint8(input.Rating),
-		Image:  &input.Image,
-	} */
-
-	err := app.models.Carts.AddToCart(&data.Product{}, userId, productId)
+	err := app.models.Carts.AddToCart(userId, productId)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return

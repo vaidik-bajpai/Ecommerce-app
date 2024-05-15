@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/vaidik-bajpai/ecommerce-api/internal/validator"
@@ -55,6 +56,7 @@ type User struct {
 	Phone     *string   `json:"phone"`
 	Version   int       `json:"version"`
 	Addresses []Address `json:"addresses,omitempty"`
+	Cart      []Product `json:"cart"`
 }
 
 func (u *User) IsAnonymous() bool {
@@ -196,6 +198,9 @@ func (m UserModel) Get(userID int64) (*User, error) {
 		db.User.ID.Equals(int(userID)),
 	).With(
 		db.User.Addresses.Fetch(),
+		db.User.Cart.Fetch().With(
+			db.Cart.Products.Fetch(),
+		),
 	).Exec(ctx)
 
 	if err != nil {
@@ -223,6 +228,26 @@ func (m UserModel) Get(userID int64) (*User, error) {
 		user.Addresses = append(user.Addresses, address)
 	} */
 
+	cart, ok := newUser.Cart()
+	if !ok {
+		return nil, errors.New("error decoding cart")
+	}
+	products := cart.Products()
+
+	for _, product := range products {
+		image, ok := product.Image()
+		if !ok {
+			return nil, errors.New(fmt.Sprintf("error decoding image from product %d", product.ID))
+		}
+		aProduct := Product{
+			Name:   product.Name,
+			Price:  uint64(product.Price),
+			Rating: uint8(product.Rating),
+			Image:  &image,
+		}
+
+		user.Cart = append(user.Cart, aProduct)
+	}
 	user.Password.hash = newUser.Password
 
 	return user, nil
