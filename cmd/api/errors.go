@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"runtime/debug"
 )
 
 func (app *application) logError(r *http.Request, err error) {
+	trace := string(debug.Stack())
 	app.logger.Println(err)
+	app.logger.Println(trace)
 }
 
 func (app *application) errorResponse(w http.ResponseWriter, r *http.Request, status int, message interface{}) {
@@ -50,5 +53,10 @@ func (app *application) invalidCredentialResponse(w http.ResponseWriter, r *http
 func (app *application) invalidAuthenticationTokenResponse(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("WWW-Authenticate", "Bearer")
 	message := "invalid or missing authentication token"
+	app.errorResponse(w, r, http.StatusUnauthorized, message)
+}
+
+func (app *application) authenticationRequiredResponse(w http.ResponseWriter, r *http.Request) {
+	message := "you must be authenticated to access this resource"
 	app.errorResponse(w, r, http.StatusUnauthorized, message)
 }

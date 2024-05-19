@@ -11,7 +11,7 @@ import (
 	"github.com/vaidik-bajpai/ecommerce-api/internal/data"
 )
 
-func (app *application) authenticate(next http.HandlerFunc) http.HandlerFunc {
+func (app *application) authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Vary", "Authorization")
 
@@ -52,7 +52,7 @@ func (app *application) authenticate(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		userID, err := strconv.ParseInt(claims.ID, 10, 64)
+		userID, err := strconv.ParseInt(claims.Subject, 10, 64)
 		if err != nil {
 			app.serverErrorResponse(w, r, err)
 			return
@@ -70,6 +70,19 @@ func (app *application) authenticate(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		r = app.contextSetUser(r, user)
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func (app *application) requireAuthenticatedUser(next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user := app.contextGetUser(r)
+
+		if user.IsAnonymous() {
+			app.authenticationRequiredResponse(w, r)
+			return
+		}
 
 		next.ServeHTTP(w, r)
 	})

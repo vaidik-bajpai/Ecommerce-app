@@ -3,7 +3,6 @@ package data
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/vaidik-bajpai/ecommerce-api/internal/validator"
@@ -86,13 +85,7 @@ func ValidateLastName(v *validator.Validator, lastName string) {
 
 func ValidatePhone(v *validator.Validator, phone string) {
 	v.Check(phone != "", "phone", "must be provided")
-	v.Check(len(phone) == 10, "phone", "must contain 10 digits")
-	for i := range phone {
-		if phone[i] > '9' || phone[i] < '0' {
-			v.AddErrors("phone", "invalid phone number")
-			return
-		}
-	}
+	v.Check(validator.Matches(phone, validator.PhoneRX), "phone", "must be a valid email address")
 }
 
 func ValidateUser(v *validator.Validator, user *User) {
@@ -196,11 +189,6 @@ func (m UserModel) Get(userID int64) (*User, error) {
 
 	newUser, err := m.DB.User.FindUnique(
 		db.User.ID.Equals(int(userID)),
-	).With(
-		db.User.Addresses.Fetch(),
-		db.User.Cart.Fetch().With(
-			db.Cart.Products.Fetch(),
-		),
 	).Exec(ctx)
 
 	if err != nil {
@@ -216,64 +204,7 @@ func (m UserModel) Get(userID int64) (*User, error) {
 		Version:   newUser.Version,
 	}
 
-	/* for _, dbAddress := range newUser.Addresses() {
-		address := Address{
-			ID:      dbAddress.ID,
-			House:   &dbAddress.House,
-			Street:  &dbAddress.Street,
-			City:    &dbAddress.City,
-			Pincode: &dbAddress.Pincode,
-			UserID:  dbAddress.UserID,
-		}
-		user.Addresses = append(user.Addresses, address)
-	} */
-
-	cart, ok := newUser.Cart()
-	if !ok {
-		return nil, errors.New("error decoding cart")
-	}
-	products := cart.Products()
-
-	for _, product := range products {
-		image, ok := product.Image()
-		if !ok {
-			return nil, errors.New(fmt.Sprintf("error decoding image from product %d", product.ID))
-		}
-		aProduct := Product{
-			Name:   product.Name,
-			Price:  uint64(product.Price),
-			Rating: uint8(product.Rating),
-			Image:  &image,
-		}
-
-		user.Cart = append(user.Cart, aProduct)
-	}
 	user.Password.hash = newUser.Password
 
 	return user, nil
 }
-
-/*
-type ProductUser struct {
-	ProductID   int
-	ProductName *string
-	Price       uint64
-	Rating      uint8
-	Image       *string
-}
-
-type Order struct {
-	ID            int64
-	OrderedAt     time.Time
-	Price         uint64
-	Discount      *int
-	PaymentMethod Payment
-	UserID        int64
-	AddressID     int64
-}
-
-type Payment struct {
-	Digital bool
-	COD     bool
-}
-*/

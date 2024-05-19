@@ -3,6 +3,7 @@ package data
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/vaidik-bajpai/ecommerce-api/internal/prisma/db"
@@ -104,8 +105,7 @@ func (m ProductModel) GetAll(productName string, price int, filters Filters) ([]
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	var total db.RawInt
-	err := m.DB.Prisma.QueryRaw(`SELECT count(*) as total FROM "Product"`).Exec(ctx, total)
+	totalRecords, err := m.DB.Prisma.ExecuteRaw(`SELECT count(*) as total FROM "Product"`).Exec(ctx)
 	if err != nil {
 		return nil, Metadata{}, err
 	}
@@ -113,26 +113,31 @@ func (m ProductModel) GetAll(productName string, price int, filters Filters) ([]
 	var records []db.ProductModel
 
 	switch filters.sortColumn() {
-	case "id":
-		records, err = m.DB.Product.FindMany().Take(filters.limit()).Skip(filters.offset()).OrderBy(
-			db.Product.Price.Lte(price),
-			db.Product.ID.Order(filters.sortDirection()),
-		).Exec(ctx)
 	case "price":
-		records, err = m.DB.Product.FindMany().Take(filters.limit()).Skip(filters.offset()).OrderBy(
+		records, err = m.DB.Product.FindMany(
+			db.Product.Price.LTE(price),
+		).Take(filters.limit()).Skip(filters.offset()).OrderBy(
 			db.Product.Price.Order(filters.sortDirection()),
 		).Exec(ctx)
 	case "rating":
-		records, err = m.DB.Product.FindMany().Take(filters.limit()).Skip(filters.offset()).OrderBy(
-			db.Product.Price.Lte(price),
+		records, err = m.DB.Product.FindMany(
+			db.Product.Price.LTE(price),
+		).Take(filters.limit()).Skip(filters.offset()).OrderBy(
 			db.Product.Rating.Order(filters.sortDirection()),
 		).Exec(ctx)
 	case "name":
 		records, err = m.DB.Product.FindMany().Take(filters.limit()).Skip(filters.offset()).OrderBy(
-			db.Product.Price.Lte(price),
 			db.Product.Name.Order(filters.sortDirection()),
 		).Exec(ctx)
+	default:
+		records, err = m.DB.Product.FindMany(
+			db.Product.Price.LTE(price),
+		).Take(filters.limit()).Skip(filters.offset()).OrderBy(
+			db.Product.ID.Order(filters.sortDirection()),
+		).Exec(ctx)
 	}
+
+	fmt.Println(err)
 
 	if err != nil {
 		switch {
@@ -167,7 +172,8 @@ func (m ProductModel) GetAll(productName string, price int, filters Filters) ([]
 		products = append(products, &record)
 	}
 
-	metadata := calculateMetadata(int(total), filters.Page, filters.PageSize)
+	metadata := calculateMetadata(totalRecords.Count, filters.Page, filters.PageSize)
+
 	return products, metadata, err
 }
 

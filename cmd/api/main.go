@@ -49,7 +49,7 @@ func main() {
 	flag.StringVar(&cfg.jwt.secret, "jwt", os.Getenv("JWT_SECRET"), "secret for json web token")
 	flag.Parse()
 
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Llongfile)
+	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
 
 	db, err := cfg.openDB()
 	if err != nil {

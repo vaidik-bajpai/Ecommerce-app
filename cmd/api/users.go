@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -21,7 +22,7 @@ func (app *application) createUserHandler(w http.ResponseWriter, r *http.Request
 		Phone     string `json:"phone"`
 	}
 
-	err = app.readJSON(w, r, &input)
+	err := app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return
@@ -130,18 +131,18 @@ func (app *application) userLoginHandler(w http.ResponseWriter, r *http.Request)
 	claims.Issuer = "bajpai.ecommerce"
 	claims.Audiences = []string{"bajpai.ecommerce"}
 
+	fmt.Println("Check1auth")
+
 	jwtBytes, err := claims.HMACSign(jwt.HS256, []byte(app.config.jwt.secret))
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-
+	fmt.Println("END1auth")
+	fmt.Println("Check2auth")
 	err = app.writeJSON(w, http.StatusCreated, envelope{"authentication_token": string(jwtBytes)}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
-}
-
-func (app *application) viewProductHandler(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("viewProduct endpoint"))
+	fmt.Println("END2auth")
 }
